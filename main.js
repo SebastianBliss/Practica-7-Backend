@@ -5,9 +5,14 @@ console.log('Hola mundo con Node JS')
 
 //Forma actual con ECMAScript 6 de llamar librerías-- despues de que confirmar que este bien toca ir a la carpeta package.json y agregar la propiedad "Type":"module" para habilitar esa funcionalidad.
 import express from 'express'
+import client from './db.js'
+
+import bodyParser from 'body-parser'
 
 const app = express()
 const port = 3000
+
+app.use(bodyParser.json())
 
 //---------------------END POINT (una de las rutas de nuestra API, una API puede tener diferentes end points-------------------
 /* El siguiente indica que vamos a usar el metodo GET los metodos son GET(Obtener), 
@@ -17,17 +22,30 @@ POST(Guardar), PATH(Actualizar), DELETE(Eliminar) */
 //El segundo parametro establece el codigo a ejecutar como call back como (call back:funcion que se ejecuta como parametro)
 //call back recibe 2 parametros req(request o petición), res(response o respuesta)
 
-app.get('/api/v1/usuarios', (req, res) => {
+app.get('/api/v1/usuarios', async (req, res) => {
     //La siguiente es una manera de hacerlo, pero lo ideal es hacerlo con json
     //res.send('Hola')
 
+    //para poder usar este await incluimos arriba el async
+    await client.connect()
+
+    const db = client.db ('sample_mflix')
+    const users = db.collection('users')
+
+    //si dejamos los {} vacios nos trae todo si ponemos algo nos trae eso especifico. 
+    const listaUsuarios = await users.find({}).toArray()
+    console.log(listaUsuarios)
+    
     //Esta es la manera de hacerlo para alinearlos al standar de json hay dos maneras:
     //Primera manera
-    /* const respuesta = {
+        /* const respuesta = {
         mensaje: "Hola"
     }
 
-    res.json(respuesta) */
+        res.json(respuesta) */
+
+        
+        console.log(req.query)
 
     res.json({
         mensaje: "Lista de Usuarios"
@@ -51,6 +69,8 @@ const cedula = req.params.cedula
 //-----------Metodo POST es para crear datos o info en nuestro sistema.
 app.post('/api/v1/usuarios', (req, res) => {
     
+    console.log(req.body)
+
     res.json({
         mensaje: 'usuario guardado'
     })
