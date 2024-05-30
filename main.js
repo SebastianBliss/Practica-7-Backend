@@ -26,15 +26,24 @@ app.get('/api/v1/usuarios', async (req, res) => {
     //La siguiente es una manera de hacerlo, pero lo ideal es hacerlo con json
     //res.send('Hola')
 
-    //para poder usar este await incluimos arriba el async
+    //1. Conectarnos a la base de datos. (para poder usar este await incluimos arriba el async
     await client.connect()
 
-    const db = client.db ('sample_mflix')
-    const users = db.collection('users')
+    //  2. Seleccionar la DB que vamos a utilizar. 
+    const dbSampleMflix = client.db ('sample_mflix')
 
-    //si dejamos los {} vacios nos trae todo si ponemos algo nos trae eso especifico. 
-    const listaUsuarios = await users.find({}).toArray()
-    console.log(listaUsuarios)
+    //3. Seleccionar la coleccion
+    const usersCollection = dbSampleMflix.collection('users')
+        
+    
+    // 4. Hacer las consultas o Querys a la base de datos (Es importante poner Await), que puede ser eleminar, moficidar, buscar, crear.
+    //si dejamos los {} vacios nos trae toda la info si ponemos algo nos trae eso especifico. 
+    //toArray() hace referencia a que nos traiga en una lista de texto la info.
+    const userList = await usersCollection.find({}).toArray()
+    console.log(userList)
+
+    //5. Cerrar la conexion a la base de datos
+    await client.close()
     
     //Esta es la manera de hacerlo para alinearlos al standar de json hay dos maneras:
     //Primera manera
@@ -48,7 +57,10 @@ app.get('/api/v1/usuarios', async (req, res) => {
         console.log(req.query)
 
     res.json({
-        mensaje: "Lista de Usuarios"
+        mensaje: "Lista de Usuarios",
+        //Siempre donde diga data es donde va a ir la info con la que vamos a responder. 
+       
+        data: userList
     })
 })
 
@@ -67,9 +79,40 @@ const cedula = req.params.cedula
 
 
 //-----------Metodo POST es para crear datos o info en nuestro sistema.
-app.post('/api/v1/usuarios', (req, res) => {
+app.post('/api/v1/usuarios', async (req, res) => {
     
     console.log(req.body)
+    const userData = req.body
+
+    //1. Conectarnos a la base de datos. (para poder usar este await incluimos arriba el async
+    await client.connect()
+
+    //  2. Seleccionar la DB que vamos a utilizar. 
+    const dbSampleMflix = client.db ('sample_mflix')
+
+    //3. Seleccionar la coleccion
+    const usersCollection = dbSampleMflix.collection('users')
+    
+    //4. Almacenar el usuario
+    await usersCollection.insertOne({
+        
+            "nombre": userData.nombre,
+            "edad": userData.edad,
+            "ciudad": userData.ciudad,
+            "email": userData.email,
+            //OPCION:1 "ubicación": userData.ubicación
+            //OPCION: 2
+            "ubicacion": {
+                "latitud": userData.ubicacion.latitud,
+                "longitud": userData.ubicacion.longitud
+            }
+    })
+
+
+    //5. Cerrar la conexion a la base de datos
+    await client.close()
+    
+
 
     res.json({
         mensaje: 'usuario guardado'
