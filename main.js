@@ -3,11 +3,13 @@ console.log('Hola mundo con Node JS')
 //la siguiente es la Forma antigua de llamar librerías + const app y const port
 /* const express = require('express') */
 
-//Forma actual con ECMAScript 6 de llamar librerías-- despues de que confirmar que este bien toca ir a la carpeta package.json y agregar la propiedad "Type":"module" para habilitar esa funcionalidad.
-import express from 'express'
-import client from './db.js'
-
+//Forma actual con ECMAScript 6 de llamar librerías-- despues de que c  onfirmar que este bien toca ir a la carpeta package.json y agregar la propiedad "Type":"module" para habilitar esa funcionalidad.
+//Suelen organizarse de forma alfabetica con el nombre de las librerias
 import bodyParser from 'body-parser'
+import client from './db.js'
+import express from 'express'
+//Si ponemos los corchetes vacios nos traera todas las librerias, si ponemos una nos traera esa exclusivamente
+import { ObjectId } from 'mongodb'
 
 const app = express()
 const port = 3000
@@ -64,16 +66,37 @@ app.get('/api/v1/usuarios', async (req, res) => {
     })
 })
 
-//En este caso el get sería para atraer un dato en especifico, ejemplo Cedula en este caso.
-app.get('/api/v1/usuarios/:cedula', (req, res) => {
+//get es para obtener un usuario especifico. En este caso el get sería para atraer un dato en especifico, ejemplo Cedula en este caso.
+app.get('/api/v1/usuarios/:id', async (req, res) => {
 
-        console.log(req.params)
-const cedula = req.params.cedula
+    console.log(req.params)
+    let id = req.params.id
 
-        res.json({
+    //1. Conectarnos a la base de datos. (para poder usar este await incluimos arriba el async
+    await client.connect()
+
+    //  2. Seleccionar la DB que vamos a utilizar. 
+    const dbSampleMflix = client.db ('sample_mflix')
+
+    //3. Seleccionar la coleccion
+    const usersCollection = dbSampleMflix.collection('users')
+
+    // EL new se pone para inicializar la clase ObjectId, si no se pone new no sirve de nada.
+    id = new ObjectId(id)
+   
+        //4. hascer las consultas o querys
+    const user = await usersCollection.find({
+        _id: id
+    }).toArray()
+
+    //5. Cerrar la conexión. 
+    await client.close()
+
+    res.json({
             // si se quieren poner variable en el string se pone en lugar de '' se ponen las back tips las comillas que son crtl + `
           //Para indicarlas como variables de pone ${}
-            mensaje: `usuario obtenido con la cedula: ${cedula}`
+            mensaje: `usuario obtenido con el id: ${id}`,
+            data: user
         })
 })
 
@@ -115,16 +138,43 @@ app.post('/api/v1/usuarios', async (req, res) => {
 
 
     res.json({
-        mensaje: 'usuario guardado'
+        mensaje: 'usuario guardado', 
+        data: userData
     })
 })
-// Metodo PUT: Actualizar todos los datos de un elemento
-app.put('/api/v1/usuarios/:cedula', (req, res)=>{
+// Metodo PUT: Actualizar todos los datos de un elemento.
+app.put('/api/v1/usuarios/:id', async (req, res)=>{
     
-    const cedula = req.params.cedula
+    let id = req.params.id
+
+    console.log(req.body)
+    const userData = req.body
+
+    //1. Conectarnos a la base de datos. (para poder usar este await incluimos arriba el async
+    await client.connect()
+
+    //  2. Seleccionar la DB que vamos a utilizar. 
+    const dbSampleMflix = client.db ('sample_mflix')
+
+    //3. Seleccionar la coleccion
+    const usersCollection = dbSampleMflix.collection('users')
+    
+    id = new ObjectId(id)
+
+    //4. Realizar la consulta
+    await usersCollection.updateOne(
+        {_id: id},
+        {
+            $set: {
+                 name: userData.name
+        }
+    })
+
+    //5. Cerrar nuestra consulta
+    await client.close()
 
     res.json({
-        mensaje: `usuario con cedula ${cedula} actualizado`
+        mensaje: `usuario con id ${id} actualizado`
     })
 })
 
@@ -137,12 +187,31 @@ app.patch('/api/v1/usuarios/:cedula', (req, res) => {
     })
 })
 
-app.delete('/api/v1/usuarios/:cedula', (req, res) => {
+app.delete('/api/v1/usuarios/:id', async (req, res) => {
 
-    const cedula = req.params.cedula
+    let id = req.params.id
+    
+    //1. Conectarnos a la base de datos. (para poder usar este await incluimos arriba el async
+    await client.connect()
+
+    //  2. Seleccionar la DB que vamos a utilizar. 
+    const dbSampleMflix = client.db ('sample_mflix')
+
+    //3. Seleccionar la coleccion
+    const usersCollection = dbSampleMflix.collection('users')
+    
+    id = new ObjectId(id)
+
+    //4. realizar la consulta
+    await usersCollection.deleteOne({
+        _id: id
+    })
+
+    //5. Cerrar nuestra conexion a la base
+    await client.close()
     
     res.json({
-        mensaje: `usuario con cedula ${cedula} eliminado`
+        mensaje: `usuario con id ${id} eliminado`
     })
 })
 
